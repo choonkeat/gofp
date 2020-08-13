@@ -33,6 +33,15 @@ func (m Maybe[T]) Map(callback func(T) T) Maybe[T] {
 	return Just(callback(m.value))
 }
 
+// since r.AndThen _method_ cannot specify another type U, we need a standalone function here
+func AndThenMaybe[type T, U](m Maybe[T], callback func(T) Maybe[U]) Maybe[U] {
+	if m.nothing {
+		return Nothing(U)()
+	}
+	return callback(m.value)
+}
+
+
 func (m Maybe[T]) AndThen(callback func(T) Maybe[T]) Maybe[T] {
 	if m.nothing {
 		return m
