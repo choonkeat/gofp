@@ -1,0 +1,48 @@
+package gofp
+
+// Container to hold a value or none
+type Maybe[type T] struct {
+	value T
+	nothing bool
+}
+
+func Just[type T](value T) Maybe[T] {
+	return Maybe[T]{value: value}
+}
+
+func Nothing[type T]() Maybe[T] {
+	return Maybe[T]{nothing: true}
+}
+
+func (m Maybe[T]) Just(callback func(T)) {
+	if !m.nothing {
+		callback(m.value)
+	}
+}
+
+func (m Maybe[T]) Nothing(callback func()) {
+	if m.nothing {
+		callback()
+	}
+}
+
+func (m Maybe[T]) Map(callback func(T) T) Maybe[T] {
+	if m.nothing {
+		return m
+	}
+	return Just(callback(m.value))
+}
+
+func (m Maybe[T]) AndThen(callback func(T) Maybe[T]) Maybe[T] {
+	if m.nothing {
+		return m
+	}
+	return callback(m.value)
+}
+
+func (m Maybe[T]) WithDefault(fallback T) T {
+	if m.nothing {
+		return fallback
+	}
+	return m.value
+}

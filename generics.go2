@@ -1,0 +1,10 @@
+package gofp
+
+// Map applies a series of functions to transform the value; return type is the same as input type
+func Map[type T](value T, callbacks ...func(T) T) T {
+	var current = value
+	for i := range callbacks {
+		current = callbacks[i](current)
+	}
+	return current
+}

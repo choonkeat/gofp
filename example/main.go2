@@ -1,0 +1,105 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"math/rand"
+	"time"
+
+	"github.com/choonkeat/gofp"
+)
+
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func maybes() gofp.Maybe(int) {
+	switch n := r.Intn(3); n {
+	case 1: return gofp.Just(3)
+	case 2: return gofp.Just(10)
+	}
+	return gofp.Nothing(int)()
+}
+
+func results() gofp.Result(string) {
+	switch n := r.Intn(3); n {
+	case 1: return gofp.Ok("alpha")
+	case 2: return gofp.Ok("beta")
+	}
+	return gofp.Err(string)(fmt.Errorf("cannot load data"))
+}
+
+func oldresults() (string, error) {
+	switch n := r.Intn(3); n {
+	case 1: return "alpha", nil
+	case 2: return "beta", nil
+	}
+	return "", fmt.Errorf("cannot load data")
+}
+
+func main() {
+	log.Println("hello!", gofp.Map("hello", strings.ToUpper))
+
+	// Maybe
+	{
+		log.Println("")
+		log.Println("Maybe")
+		a := maybes().Map(func(i int) int {
+			log.Println("[mapping]", i)
+			return i * i
+		}).AndThen(func(i int) (gofp.Maybe(int)) {
+			log.Println("[andThen]", i)
+			if i % 2 == 0 {
+				return gofp.Just(i / 2)
+			}
+			return gofp.Nothing(int)()
+		}).Map(func(i int) int {
+			return i + 1
+		})
+		a.Just(func(i int) { log.Println("is Just", i) })  // called
+		a.Nothing(func() { log.Println("is Nothing") })    // ignored
+		log.Println("WithDefault(42)", a.WithDefault(42)) // 5
+	}
+
+	// Result
+	{
+		log.Println("")
+		log.Println("Result")
+		a := results().Map(func(s string) string {
+			log.Println("[mapping]", s)
+			return strings.Title(s)
+		}).AndThen(func (s string) (gofp.Result(string)) {
+			log.Println("[andThen]", s)
+			if strings.HasPrefix(s, "A") {
+				return gofp.Ok("Success: " + s)
+			}
+			return gofp.Err(string)(fmt.Errorf("Failed %q", s))
+		}).Map(func(s string) string {
+			return s + " [data]"
+		})
+		a.Ok(func(s string) { log.Println("data is", s) })
+		a.Err(func(err error) { log.Println("error is", err.Error()) })
+		log.Println(`WithDefault("<no data>")`, a.WithDefault("<no data>"))
+	}
+
+	// Old school `data, err := ...` result
+	{
+		log.Println("")
+		log.Println("Old school `data, err`")
+		data, err := oldresults()
+		a := gofp.NewResult(data, err).Map(func(s string) string {
+			log.Println("[mapping]", s)
+			return strings.Title(s)
+		}).AndThen(func (s string) (gofp.Result(string)) {
+			log.Println("[andThen]", s)
+			if strings.HasPrefix(s, "A") {
+				return gofp.Ok("Success: " + s)
+			}
+			return gofp.Err(string)(fmt.Errorf("Failed %q", s))
+		}).Map(func(s string) string {
+			return s + " [data]"
+		})
+		a.Ok(func(s string) { log.Println("data is", s) })
+		a.Err(func(err error) { log.Println("error is", err.Error()) })
+		log.Println(`WithDefault("<no data>")`, a.WithDefault("<no data>"))
+	}
+}

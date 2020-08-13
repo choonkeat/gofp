@@ -1,0 +1,57 @@
+package gofp
+
+// Container to hold a value or error
+type Result[type T] struct {
+	value T
+	err error
+}
+
+// because so many things return `data, err` pairs
+func NewResult[type T](value T, err error) Result[T] {
+	if err != nil {
+		return Err[T](err)
+	}
+	return Ok[T](value)
+}
+
+func Ok[type T](value T) Result[T] {
+	return Result[T]{value: value}
+}
+
+func Err[type T](err error) Result[T] {
+	return Result[T]{err: err}
+}
+
+func (r Result[T]) Ok(callback func(T)) {
+	if r.err == nil {
+		callback(r.value)
+	}
+}
+
+func (r Result[T]) Err(callback func(error)) {
+	if r.err != nil {
+		callback(r.err)
+	}
+}
+
+func (r Result[T]) AndThen(callback func(T) Result[T]) Result[T] {
+	if r.err != nil {
+		return r
+	}
+	return callback(r.value)
+}
+
+func (r Result[T]) Map(callback func(T) T) Result[T] {
+	if r.err != nil {
+		return r
+	}
+	return Ok(callback(r.value))
+}
+
+func (r Result[T]) WithDefault(fallback T) T {
+	if r.err != nil {
+		return fallback
+	}
+	return r.value
+}
+
